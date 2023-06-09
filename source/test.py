@@ -8,19 +8,36 @@ from topology.topology import Topology
 def read_topo(topo_name, adjust_factor_in=None):
     assert(topo_name in ["A", "B", "C", "D", "E"])
     topo_name_map_file_path = {}
-    
+    topo_name_map_file_path['E'] = './data/topologies/random_sampled_topos/VisionNet_topology.xlsx'
+    topo_name_map_file_path['B'] = './data/topologies/random_sampled_topos/Cogentco_topology.xlsx'
+    topo_name_map_file_path['A'] = '/home/barak/PycharmProjects/neuroplanfacebook/source/data/topologies/random_sampled_topos/Tinet_topology.xlsx'
+    topo_name_map_file_path['C'] = './data/topologies/random_sampled_topos/KDL_topology.xlsx'
+    topo_name_map_file_path['D'] = './data/topologies/random_sampled_topos/Tinet_topology.xlsx'
     file_path = topo_name_map_file_path[topo_name]
     
-    topo = Topology(adjust_factor=adjust_factor)
+    topo = Topology(adjust_factor=1) #was adust_factor BARAK
     topo.import_fiber_from_file(file_path)
     topo.import_lease_from_file(file_path)
     topo.import_l3_node_from_file(file_path)
     topo.import_l3_link_from_file(file_path)
     topo.import_tm_from_file(file_path)
     topo.import_spof_from_file(file_path)
-    
     topo.gen_failed_ip_link_and_spof_map()
     topo.generate_delta_bw_matrix_from_spof_list()
+
+    # import matplotlib.pyplot as plt
+    # import networkx as nx
+    # g = topo.ip.generate_graph()
+    # pos = nx.shell_layout(g)
+    # plt.figure(figsize=(12, 6))
+    # nx.draw(g, pos,with_labels=True, node_size=200, alpha=0.8, font_size=10)
+    # # plt.tight_layout()
+    # plt.savefig("tinet.pdf", dpi=300)
+    # plt.show()
+    # exit()
+
+
+
 
     return topo
 
@@ -61,7 +78,6 @@ def fig_7(epoch_num=10):
 # support ILP, First-stage and Second-stage
 def single_dp_fig8(alg, adjust_factor_in=1, load_trained=True):
     print(f'\n========== Fig8 start, A-{adjust_factor_in}, alg:{alg} ==========\n')
-                                
     if alg == "ILP":
         ilp_solver = ILP(topo=read_topo("A", adjust_factor_in=adjust_factor_in))
         ilp_solver.run_ilp()

@@ -107,7 +107,8 @@ class PlanEnv(gym.Env):
         
         if cost >= 0:
             # check the spof constraints further
-            sat_flag, cache_hit_flag, self.state_map_fp_cache = self.topo.check_spof(l3_link_idx, delta_bw_act, self.state_map_fp_cache, self.cache_max_entry, self.checker_mode)
+            sat_flag, cache_hit_flag, self.state_map_fp_cache = self.topo.check_spof(l3_link_idx, delta_bw_act,
+                                                                                     self.state_map_fp_cache, self.cache_max_entry, self.checker_mode)
             reward = -round(cost*self.norm_param, 10)
             self.cost += cost
         else:
@@ -155,12 +156,10 @@ class PlanEnv(gym.Env):
         self.action_cnt = 0
         self.cum_rwd = 0
         self.cost = 0
-        
         self.topo.reset()
         self.epoch_idx += 1
         self.action_list = []
         sys.stdout.flush()
-
         return self.get_observation()
 
     def get_observation(self):
@@ -170,16 +169,12 @@ class PlanEnv(gym.Env):
         """
         E_origin = self.topo.edge2node_adj
         E_hat = E_origin + np.eye(E_origin.shape[0])
-
         D = np.diag(np.sum(E_hat, axis=1))
-
         # https://towardsdatascience.com/how-to-do-deep-learning-on-graphs-with-graph-convolutional-networks-62acf5b143d0
         D_spectral = np.sqrt(np.linalg.inv(D))
         E = np.matmul(np.matmul(D_spectral, E_hat),D_spectral)
-        
         F = self.topo.get_edge_feature()
         ob = np.concatenate((E,F), axis=1)
-        
         mask = np.asarray(self.topo.get_feasible_action(self.max_n_delta_bw,self.delta_bw))
         return ob, mask
 

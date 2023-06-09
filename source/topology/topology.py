@@ -135,34 +135,33 @@ class Topology:
             
         print("# of l1 node:{}, # of fibers:{}".format(len(self.optic.nodes), len(self.optic.fibers)))
 
-    def import_lease_from_file(self, file_path):
-        df = pd.read_excel(file_path, sheet_name="Leases")
+    def import_lease_from_file(self, file_path): #Barak, took it from the project of neuroplan-p
+        df = pd.read_excel(file_path, sheet_name="RTT-Capacity")
 
         for index, row in df.iterrows():
-            self.optic.register_node(row['src'])
-            self.optic.register_node(row['dst'])
-            self.fiber_from_lease.add(row['name'])
-            self.optic.register_fiber(row['name'],self.optic.get_node_by_name(row['src']),self.optic.get_node_by_name(row['dst']),\
-                length=int(row['rtt']),lease_flag=True,min_bw=int(row['min_capacity_gbps']),max_bw=int(row['max_capacity_gbps']))
+            self.optic.register_node(row['Source'])
+            self.optic.register_node(row['Destination'])
+            self.fiber_from_lease.add(row['LinkName'])
+            self.optic.register_fiber(row['LinkName'], self.optic.get_node_by_name(row['Source']), self.optic.get_node_by_name(row['Destination']), \
+                                      length=int(row['RTT']), lease_flag=True, min_bw=int(row['CapacityMin']), max_bw=int(row['CapacityMax']))
 
-            src_name = min(row['src'], row['dst'])
-            dst_name = max(row['src'], row['dst'])
-            
+            src_name = min(row['Source'], row['Destination'])
+            dst_name = max(row['Source'], row['Destination'])
+
             od_pair = (src_name, dst_name)
             try:
-                self.od_pair_map_lease_name[od_pair].append(row['name'])
+                self.od_pair_map_lease_name[od_pair].append(row['LinkName'])
             except:
-                self.od_pair_map_lease_name[od_pair] = [row['name']]
-            
+                self.od_pair_map_lease_name[od_pair] = [row['LinkName']]
+
             try:
-                self.od_pair_map_optic_name[od_pair].append(row['name'])
+                self.od_pair_map_optic_name[od_pair].append(row['LinkName'])
             except:
-                self.od_pair_map_optic_name[od_pair] = [row['name']]
-            
+                self.od_pair_map_optic_name[od_pair] = [row['LinkName']]
+
             self.optic_pair_name_set.add(od_pair)
 
         print("# of fibers after importing leases:{}".format(len(self.optic.fibers)))
-
     def import_l3_node_from_file(self, file_path):
         df = pd.read_excel(file_path, sheet_name="L3Nodes")
 
@@ -176,7 +175,7 @@ class Topology:
             self.ip.register_router(row["name"], self.optic.get_node_by_name(row["l1_node"]), row["stub"])
         print("# of l3 node:{}".format(len(self.ip.routers)))
 
-    def import_l3_link_from_file(self, file_path, simplified_link=-1):
+    def import_l3_link_from_file(self, file_path, simplified_link=-1): #Barak, took it from the project of neuroplan-p
         df = pd.read_excel(file_path, sheet_name="L3Links")
 
         self.l3_link_related_node_pairs = set()
@@ -189,21 +188,21 @@ class Topology:
             if simplified_link > 0 and self.candidate_idx > simplified_link:
                 break
 
-            assert(row['src'] in self.ip.routers)
-            assert(row['dst'] in self.ip.routers)
+            assert (row['src'] in self.ip.routers)
+            assert (row['dst'] in self.ip.routers)
 
-            init_capa = int(int(row['min_capacity_gbps'])*self.adjust_factor)
+            init_capa = int(int(row['min_capacity_gbps']) * self.adjust_factor)
 
             item_str_list = row['fiber_name_map_spectrum'].split(";")
             fiber_map_spectrum = {}
             optic_node_pair_set = set()
             for item in item_str_list:
                 k, v = item.split(":")
-                assert(k in self.optic.fibers)
+                assert (k in self.optic.fibers)
 
                 # check the solution
-                assert(int(row['final_capacity_gbps'])<=int(row['max_capacity_gbps']))
-                assert(int(row['final_capacity_gbps'])>=init_capa)
+                assert (int(row['final_capacity_gpbs']) <= int(row['max_capacity_gbps']))
+                assert (int(row['final_capacity_gpbs']) >= init_capa)
 
                 fiber_map_spectrum[k] = float(v)
 
@@ -216,12 +215,12 @@ class Topology:
 
                 else:
                     # fibers in "Fibers", care about spectrum
-                    used_spectrum = round(init_capa*fiber_map_spectrum[k],5)
+                    used_spectrum = round(init_capa * fiber_map_spectrum[k], 5)
                     try:
                         self.fiber_map_spectrum_sum[k] += used_spectrum
                     except:
                         self.fiber_map_spectrum_sum[k] = used_spectrum
-                
+
                 # store the optic path
                 optic_src_name = self.optic.fibers[k].src.name
                 optic_dst_name = self.optic.fibers[k].dst.name
@@ -245,30 +244,29 @@ class Topology:
                 self.od_pair_map_link_name[od_pair] = [row['name']]
 
             optic_set = frozenset(fiber_map_spectrum.keys())
-            assert(optic_set not in optic_set)
+            assert (optic_set not in optic_set)
             self.l3_link_optics_set.add(optic_set)
 
-            self.ip.register_link(row['name'], optic_set, self.ip.get_router_by_name(src_name), self.ip.get_router_by_name(dst_name),\
-                idx=self.candidate_idx, initial_bw=init_capa, max_bw=int(row['max_capacity_gbps']),\
-                igp=int(row['igp']), fiber_map_spectrum=fiber_map_spectrum, cost=l3_link_cost)
+            self.ip.register_link(row['name'], optic_set, self.ip.get_router_by_name(src_name), self.ip.get_router_by_name(dst_name), \
+                                  idx=self.candidate_idx, initial_bw=init_capa, max_bw=int(row['max_capacity_gbps']), \
+                                  igp=int(row['igp']), fiber_map_spectrum=fiber_map_spectrum, cost=l3_link_cost)
             self.candidate_idx += 1
 
-            
         print("# of l3 links in excel:{}".format(len(self.ip.links)))
 
         # check the initial ip capacity satisfy the constraints
         for fiber_name, capa_sum in self.fiber_map_capacity_sum.items():
-            assert(capa_sum<=self.optic.fibers[fiber_name].max_bw)
-            
+            assert (capa_sum <= self.optic.fibers[fiber_name].max_bw)
+
         for fiber_name, spectrum_sum in self.fiber_map_spectrum_sum.items():
-            assert(spectrum_sum<=self.optic.fibers[fiber_name].max_fp * self.optic.fibers[fiber_name].spectrum)
+            assert (spectrum_sum <= self.optic.fibers[fiber_name].max_fp * self.optic.fibers[fiber_name].spectrum)
 
         # calculate the cost of init state
         cost, capa = 0, 0
         for link_name, link_inst in self.ip.links.items():
             cost += link_inst.initial_bw * link_inst.cost
             capa += link_inst.initial_bw
-        
+
         print("init state cost:{}, capa:{}".format(cost, capa))
         
     def check_spofs_for_init_state(self, simplified_spof=-1):
@@ -347,7 +345,7 @@ class Topology:
         print("sol spof checking: sat_flag:{}, sat_flag0:{}, sat_flag1:{}, opt_cnt0:{}, opt_cnt1:{}".format(\
             sat_flag, sat_flag0, sat_flag1, opt_cnt0, opt_cnt1))
 
-    def import_tm_from_file(self, file_path, simplified_tm=-1):
+    def import_tm_from_file(self, file_path, simplified_tm=-1): # Barak - took the code
         rd.seed(1)
 
         df = pd.read_excel(file_path, sheet_name="Flows")
@@ -359,21 +357,21 @@ class Topology:
 
             if simplified_tm > 0 and index > simplified_tm:
                 break
-            assert(row['src'] in self.ip.routers)
-            assert(row['dst'] in self.ip.routers)
-            assert((row['src'], row['dst'], row['cos']) not in flow_identifier)
+            assert (row['Source'] in self.ip.routers)
+            assert (row['Destination'] in self.ip.routers)
+            assert ((row['Source'], row['Destination'], row['COS']) not in flow_identifier), (row['Source'], row['Destination'], row['COS'])
 
-            flow_identifier.add((row['src'], row['dst'], row['cos']))
-            adjust_flow_size = math.ceil(float(row['capacity_gbps']))
-            
-            self.tm.register_flow(row['name'], self.ip.get_router_by_name(row['src']), self.ip.get_router_by_name(row['dst']), \
-                adjust_flow_size, row['cos'])
-            
-            od_pair = (min(row['src'], row['dst']), max(row['src'], row['dst']))
+            flow_identifier.add((row['Source'], row['Destination'], row['COS']))
+            adjust_flow_size = math.ceil(float(row['ActualCapacity']))
+
+            self.tm.register_flow(row['LinkName'], self.ip.get_router_by_name(row['Source']), self.ip.get_router_by_name(row['Destination']), \
+                                  adjust_flow_size, row['COS'])
+
+            od_pair = (min(row['Source'], row['Destination']), max(row['Source'], row['Destination']))
             flow_od_pairs.add(od_pair)
-            self.tm_nodes.add(row['src'])
-            self.tm_nodes.add(row['dst'])
-            
+            self.tm_nodes.add(row['Source'])
+            self.tm_nodes.add(row['Source'])
+
         print("# of flows:{}".format(len(self.tm.flows)))
 
     def import_spof_from_file(self, file_path, simplified_spof=-1):

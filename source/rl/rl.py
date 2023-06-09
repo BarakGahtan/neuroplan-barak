@@ -10,7 +10,7 @@ class RL(object):
             max_n_delta_bw=1, hidden_sizes=(256, 256), \
             epoch_num=1024, max_action=512,steps_per_epoch=1024,\
             delta_bw=100, checker_mode="all", model_path=None):
-        
+        #Barak change epoch from 2014 to 3
         self.topo = topo
         
         self.graph_encoder = graph_encoder
