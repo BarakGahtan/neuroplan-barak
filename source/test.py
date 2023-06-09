@@ -25,7 +25,7 @@ def read_topo(topo_name, adjust_factor_in=None):
     topo.gen_failed_ip_link_and_spof_map()
     topo.generate_delta_bw_matrix_from_spof_list()
 
-    # import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt
     # import networkx as nx
     # g = topo.ip.generate_graph()
     # pos = nx.shell_layout(g)
